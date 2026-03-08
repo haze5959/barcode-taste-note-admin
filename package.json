@@ -1,0 +1,27 @@
+{
+  "scripts": {
+    "dev": "vite --host 172.30.1.21 --port 5960",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@auth0/auth0-react": "^2.15.0",
+    "@refinedev/antd": "^5.47.0",
+    "@refinedev/core": "^4.58.0",
+    "@refinedev/react-router-v6": "^4.6.2",
+    "@refinedev/simple-rest": "^5.0.11",
+    "@tabler/icons-react": "^3.39.0",
+    "antd": "^5.29.3",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.22.3"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.28",
+    "@types/react-dom": "^18.3.7",
+    "@vitejs/plugin-basic-ssl": "^2.1.4",
+    "@vitejs/plugin-react": "^5.1.4",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.1"
+  }
+}
