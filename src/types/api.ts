@@ -31,9 +31,8 @@ export interface DashboardStats {
     not_reply_report_count: number;
 }
 
-export interface ProductDetailResponse {
-    product: Product;
-    main_image_id?: string; // Uuid (Optional)
+export interface ProductMainImageResponse {
+    image_id: string | null;
 }
 
 // Requests

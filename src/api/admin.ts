@@ -1,6 +1,5 @@
 import { message } from "antd";
 import {
-    ProductDetailResponse,
     Report,
     DashboardStats,
     UpdateProductRequest,
@@ -9,6 +8,7 @@ import {
     MergeProductRequest,
     ProductInfo,
     NoteInfo,
+    ProductMainImageResponse,
     getErrorMessage
 } from "../types/api";
 
@@ -109,9 +109,9 @@ export function getDashboard(): Promise<DashboardStats> {
     return apiFetch<DashboardStats>("/admin/dashboard");
 }
 
-// GET admin/product
-export function getProduct(productId: string): Promise<ProductDetailResponse> {
-    return apiFetch<ProductDetailResponse>(`/admin/product?product_id=${productId}`);
+// GET admin/product/main_image
+export function getMainImage(productId: string): Promise<ProductMainImageResponse> {
+    return apiFetch<ProductMainImageResponse>(`/admin/product/main_image?product_id=${productId}`);
 }
 
 // PUT admin/product
@@ -145,6 +145,19 @@ export function updateImage(imageId: string, imageFile: File): Promise<null> {
     formData.append("file", imageFile); // Assuming the actual image bytes goes here too if needed, or if the API only takes `{"image_id": uuid}` via multipart
 
     return apiFetch<null>("/admin/image", {
+        method: "POST",
+        body: formData,
+    });
+}
+
+// POST /images/
+export function uploadImage(file: File, productId?: string, noteId?: string): Promise<string> {
+    const formData = new FormData();
+    formData.append("file", file);
+    if (productId) formData.append("product_id", productId);
+    if (noteId) formData.append("note_id", noteId);
+
+    return apiFetch<string>("/images/", {
         method: "POST",
         body: formData,
     });

@@ -13,6 +13,7 @@ import { Login } from "./pages/login";
 import { Dashboard } from "./pages/dashboard";
 import { ProductList } from "./pages/products";
 import { NotesList } from "./pages/notes"; // 새로 추가된 노트 리스트 페이지
+import { ReportsList } from "./pages/reports"; // 새로 추가된 신고 리스트 페이지
 import { setupApiInterceptor } from "./api/admin";
 
 
@@ -54,6 +55,10 @@ const App = () => {
                         {
                             name: "notes",
                             list: "/notes",
+                        },
+                        {
+                            name: "reports",
+                            list: "/reports",
                         }
                     ]}
                     options={{
@@ -75,6 +80,7 @@ const App = () => {
                             <Route index element={<Dashboard />} />
                             <Route path="/products" element={<ProductList />} />
                             <Route path="/notes" element={<NotesList />} />
+                            <Route path="/reports" element={<ReportsList />} />
                             <Route path="*" element={<ErrorComponent />} />
                         </Route>
 
