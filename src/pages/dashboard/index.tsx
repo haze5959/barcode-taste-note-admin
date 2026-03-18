@@ -7,7 +7,6 @@ import {
     AppstoreAddOutlined,
     ProfileOutlined,
     WarningOutlined,
-    PictureOutlined,
     CalendarOutlined,
     ClockCircleOutlined,
 } from "@ant-design/icons";
