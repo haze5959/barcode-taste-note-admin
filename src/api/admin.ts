@@ -142,7 +142,7 @@ export function mergeProduct(productId: string, toProductId: string): Promise<nu
 export function updateImage(imageId: string, imageFile: File): Promise<null> {
     const formData = new FormData();
     formData.append("image_id", imageId);
-    formData.append("file", imageFile); // Assuming the actual image bytes goes here too if needed, or if the API only takes `{"image_id": uuid}` via multipart
+    formData.append("image", imageFile);
 
     return apiFetch<null>("/admin/image", {
         method: "POST",
@@ -153,7 +153,8 @@ export function updateImage(imageId: string, imageFile: File): Promise<null> {
 // POST /images/
 export function uploadImage(file: File, productId?: string, noteId?: string): Promise<string> {
     const formData = new FormData();
-    formData.append("file", file);
+    formData.append("id", crypto.randomUUID());
+    formData.append("image", file);
     if (productId) formData.append("product_id", productId);
     if (noteId) formData.append("note_id", noteId);
 
@@ -183,12 +184,12 @@ export function fetchProducts(search: string | null, index: number): Promise<Pro
     return apiFetch<ProductInfo[]>(`/products?${params.toString()}`);
 }
 
-// GET /notes
+// GET /admin/notes
 export function fetchNotes(index: number, per: number = 20): Promise<NoteInfo[]> {
     const params = new URLSearchParams({
         page: (index + 1).toString(),
         per: per.toString()
     });
 
-    return apiFetch<NoteInfo[]>(`/notes?${params.toString()}`);
+    return apiFetch<NoteInfo[]>(`/admin/notes?${params.toString()}`);
 }

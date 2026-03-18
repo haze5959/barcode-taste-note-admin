@@ -13,11 +13,12 @@ import {
     Rate,
     Image,
     Card,
+    Select,
 } from "antd";
 import { fetchProducts, getProductDetail, updateProduct, updateImage, getMainImage, uploadImage, mergeProduct } from "../../api/admin";
 import { ProductInfo, UpdateProductRequest } from "../../types/api";
 
-const PRODUCT_TYPES = ["whisky", "wine", "beer", "soju", "liqueur", "cocktail", "coffee", "beverage", "other"];
+const PRODUCT_TYPES = ["whisky", "wine", "beer", "soju/sake", "liqueur/spirit", "cocktail", "coffee", "beverage", "other"];
 
 const { Title, Text } = Typography;
 const { Search } = Input;
@@ -36,7 +37,7 @@ export const ProductList: React.FC = () => {
     const [modalLoading, setModalLoading] = useState<boolean>(false);
 
     // Edit States
-    const [editForm, setEditForm] = useState<{ name: string; desc: string }>({ name: "", desc: "" });
+    const [editForm, setEditForm] = useState<{ name: string; desc: string; type: number }>({ name: "", desc: "", type: 0 });
     const [mainImageId, setMainImageId] = useState<string | null>(null);
     const [isModified, setIsModified] = useState<boolean>(false);
     const [saving, setSaving] = useState<boolean>(false);
@@ -80,12 +81,13 @@ export const ProductList: React.FC = () => {
                 getProductDetail(record.product.id),
                 getMainImage(record.product.id)
             ]);
-            
+
             setSelectedProduct(detail);
             setMainImageId(mainImage.image_id);
             setEditForm({
                 name: detail.product.name,
-                desc: detail.product.desc || ""
+                desc: detail.product.desc || "",
+                type: detail.product.type
             });
             setIsModified(false);
         } catch (error) {
@@ -97,14 +99,15 @@ export const ProductList: React.FC = () => {
         }
     };
 
-    const handleInputChange = (field: "name" | "desc", value: string) => {
+    const handleInputChange = (field: "name" | "desc" | "type", value: string | number) => {
         const newForm = { ...editForm, [field]: value };
-        setEditForm(newForm);
+        setEditForm(newForm as any);
 
         if (selectedProduct) {
             const isNameModified = newForm.name !== selectedProduct.product.name;
             const isDescModified = newForm.desc !== (selectedProduct.product.desc || "");
-            setIsModified(isNameModified || isDescModified);
+            const isTypeModified = newForm.type !== selectedProduct.product.type;
+            setIsModified(isNameModified || isDescModified || isTypeModified);
         }
     };
 
@@ -112,12 +115,16 @@ export const ProductList: React.FC = () => {
         if (!selectedProduct) return;
 
         setSaving(true);
+        const updateData: UpdateProductRequest = {
+            product_id: selectedProduct.product.id,
+        };
+
+        if (editForm.name !== selectedProduct.product.name) updateData.name = editForm.name;
+        if (editForm.desc !== (selectedProduct.product.desc || "")) updateData.desc = editForm.desc;
+        if (editForm.type !== selectedProduct.product.type) updateData.type = editForm.type;
+
         try {
-            await updateProduct({
-                product_id: selectedProduct.product.id,
-                name: editForm.name,
-                desc: editForm.desc,
-            });
+            await updateProduct(updateData);
             message.success("제품 정보가 수정되었습니다.");
             setIsModified(false);
             // Refresh detail and list
@@ -134,7 +141,7 @@ export const ProductList: React.FC = () => {
 
     const handleImageChange = async (imageId: string | null, file: File) => {
         if (!selectedProduct) return;
-        
+
         const hideLoading = message.loading(imageId ? "이미지를 변경 중입니다..." : "이미지를 등록 중입니다...", 0);
         try {
             if (imageId) {
@@ -146,11 +153,11 @@ export const ProductList: React.FC = () => {
                 await uploadImage(file, selectedProduct.product.id);
                 message.success("이미지가 성공적으로 등록되었습니다.");
             }
-            
+
             // Refresh main image
             const mainImage = await getMainImage(selectedProduct.product.id);
             setMainImageId(mainImage.image_id);
-            
+
             // Also refresh detail for consistency if needed
             const detail = await getProductDetail(selectedProduct.product.id);
             setSelectedProduct(detail);
@@ -308,7 +315,19 @@ export const ProductList: React.FC = () => {
                                 onChange={(e) => handleInputChange("name", e.target.value)}
                             />
                         </Descriptions.Item>
-                        <Descriptions.Item label="타입">{PRODUCT_TYPES[selectedProduct.product.type] || String(selectedProduct.product.type)}</Descriptions.Item>
+                        <Descriptions.Item label="타입">
+                            <Select
+                                value={editForm.type}
+                                onChange={(value) => handleInputChange("type", value)}
+                                style={{ width: "100%" }}
+                            >
+                                {PRODUCT_TYPES.map((type, index) => (
+                                    <Select.Option key={index} value={index}>
+                                        {type}
+                                    </Select.Option>
+                                ))}
+                            </Select>
+                        </Descriptions.Item>
                         <Descriptions.Item label="설명">
                             <Input.TextArea
                                 value={editForm.desc}
@@ -362,8 +381,8 @@ export const ProductList: React.FC = () => {
                                 <div style={{ padding: "20px", background: "#fafafa", borderRadius: "8px", textAlign: "center" }}>
                                     <Text type="secondary">메인 이미지가 등록되지 않았습니다.</Text>
                                     <div style={{ marginTop: "10px" }}>
-                                        <Button 
-                                            size="small" 
+                                        <Button
+                                            size="small"
                                             type="primary"
                                             onClick={() => {
                                                 const input = document.createElement("input");
@@ -384,8 +403,8 @@ export const ProductList: React.FC = () => {
                         </Descriptions.Item>
                         <Descriptions.Item label="제품 병합">
                             <Space.Compact style={{ width: '100%' }}>
-                                <Input 
-                                    placeholder="병합할 대상 제품 ID (To ID)" 
+                                <Input
+                                    placeholder="병합할 대상 제품 ID (To ID)"
                                     value={toProductId}
                                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => setToProductId(e.target.value)}
                                 />

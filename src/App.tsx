@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { Refine, Authenticated } from "@refinedev/core";
 import { ThemedLayoutV2, ErrorComponent, RefineThemes, useNotificationProvider } from "@refinedev/antd";
+import { message } from "antd";
 import { BrowserRouter, Routes, Route, Outlet } from "react-router-dom";
 import routerProvider, { NavigateToResource, CatchAllNavigate, DocumentTitleHandler, UnsavedChangesNotifier } from "@refinedev/react-router-v6";
 import { useAuth0 } from "@auth0/auth0-react";
@@ -19,6 +20,13 @@ import { setupApiInterceptor } from "./api/admin";
 
 const App = () => {
     const auth0 = useAuth0();
+    const { error } = auth0;
+
+    useEffect(() => {
+        if (error) {
+            message.error(`로그인 중 오류가 발생했습니다: ${error.message}`);
+        }
+    }, [error]);
 
     useEffect(() => {
         setupApiInterceptor(
