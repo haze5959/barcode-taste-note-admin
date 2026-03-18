@@ -2,6 +2,7 @@ import ReactDOM from "react-dom/client";
 import { Auth0Provider } from "@auth0/auth0-react";
 import App from "./App.tsx";
 import "./index.css";
+import { AUTH0_DOMAIN, AUTH0_CLIENT_ID, AUTH0_AUDIENCE } from "./constants";
 
 const root = ReactDOM.createRoot(
     document.getElementById("root") as HTMLElement
@@ -9,11 +10,11 @@ const root = ReactDOM.createRoot(
 
 root.render(
     <Auth0Provider
-        domain={import.meta.env.VITE_AUTH0_DOMAIN || "YOUR_AUTH0_DOMAIN"}
-        clientId={import.meta.env.VITE_AUTH0_CLIENT_ID || "YOUR_AUTH0_CLIENT_ID"}
+        domain={AUTH0_DOMAIN}
+        clientId={AUTH0_CLIENT_ID}
         authorizationParams={{
             redirect_uri: window.location.origin,
-            audience: import.meta.env.VITE_AUTH0_AUDIENCE,
+            audience: AUTH0_AUDIENCE,
         }}
     >
         <App />
