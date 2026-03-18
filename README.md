@@ -14,29 +14,21 @@
 
 ## 🚀 시작하기
 
-### 1. 환경 변수 설정
-프로젝트 최상위 경로에 `.env` 파일을 생성하고 아래와 같이 Auth0 정보를 설정합니다:
-
-```env
-VITE_AUTH0_DOMAIN=your_auth0_domain.auth0.com
-VITE_AUTH0_CLIENT_ID=your_auth0_client_id
-```
-
-### 2. 패키지 설치
+### 1. 패키지 설치
 이 프로젝트는 의존성 검사를 우회하기 위해 `--legacy-peer-deps` 옵션을 필수로 사용해야 합니다.
 
 ```bash
 npm install --legacy-peer-deps
 ```
 
-### 3. 개발 서버 실행
+### 2. 개발 서버 실행
 로컬 환경에서 개발 서버를 띄울 때 사용합니다. 구동 시 브라우저에서 `http://localhost:5173` 으로 접속할 수 있습니다.
 
 ```bash
 npm run dev
 ```
 
-### 4. 프로덕션 빌드
+### 3. 프로덕션 빌드
 운영 환경 배포를 위한 최적화된 결과물(dist)을 생성합니다. 내부적으로 TypeScript 컴파일 검증(`tsc`)을 포함합니다.
 
 ```bash
