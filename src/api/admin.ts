@@ -11,8 +11,7 @@ import {
     ProductMainImageResponse,
     getErrorMessage
 } from "../types/api";
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
+import { API_BASE_URL } from "../constants";
 
 let getAuthToken: (() => Promise<string | null>) | null = null;
 let onUnauthorized: (() => void) | null = null;
@@ -47,56 +46,71 @@ async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise
         }
     }
 
-    const response = await fetch(url, {
-        ...options,
-        headers,
-    });
+    try {
+        const response = await fetch(url, {
+            ...options,
+            headers,
+        });
 
-    if (response.status === 401) {
-        if (onUnauthorized) {
-            onUnauthorized();
+        if (response.status === 401) {
+            message.error("인증이 만료되었습니다. 다시 로그인해 주세요.");
+            if (onUnauthorized) {
+                onUnauthorized();
+            }
+            throw new Error("Unauthorized");
         }
-        throw new Error("Unauthorized");
-    }
 
-    if (!response.ok) {
-        try {
-            const errorClone = response.clone();
-            const json = await errorClone.json();
+        if (!response.ok) {
+            try {
+                const errorClone = response.clone();
+                const json = await errorClone.json();
+                if (json && typeof json === 'object' && json.result === false && typeof json.error === "number") {
+                    const msg = getErrorMessage(json.error);
+                    message.error(msg);
+                    throw new Error(msg);
+                }
+            } catch (e: any) {
+                if (e.message && !e.message.includes("is not valid JSON") && e.message !== "Unexpected end of JSON input") {
+                    throw e;
+                }
+            }
+
+            if (response.status === 404) {
+                message.error("요청하신 정보를 찾을 수 없습니다. (404)");
+            } else {
+                message.error(`서버 오류가 발생했습니다. (${response.status})`);
+            }
+            const errorData = await response.text().catch(() => "Unknown error");
+            throw new Error(`API error (${response.status}): ${errorData}`);
+        }
+
+        // Some endpoints return null/empty body (e.g., merge/image POST)
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+            const json = await response.json();
             if (json && typeof json === 'object' && json.result === false && typeof json.error === "number") {
                 const msg = getErrorMessage(json.error);
                 message.error(msg);
                 throw new Error(msg);
             }
-        } catch (e: any) {
-            // Re-throw if it's our newly thrown error (not a JSON parse fallback exception)
-            if (e.message && e.message !== "Unexpected end of JSON input" && !e.message.includes("is not valid JSON")) {
-                throw e;
+
+            // Return the actual data payload if the request was successful
+            if (json && typeof json === 'object' && 'data' in json) {
+                return json.data;
             }
+            return json;
         }
-
-        const errorData = await response.text().catch(() => "Unknown error");
-        message.error(`서버 오류가 발생했습니다. (${response.status})`);
-        throw new Error(`API error (${response.status}): ${errorData}`);
+        return null as any;
+    } catch (error: any) {
+        // Don't double-show message if we already threw one of our handled errors
+        if (error.message === "Unauthorized" || error.message?.includes("API error") || getErrorMessage(0).includes(error.message)) {
+            throw error;
+        }
+        
+        console.error("API Fetch internal/network error:", error);
+        message.error("네트워크 오류가 발생했습니다. 서버 상태를 확인해 주세요.");
+        throw error;
     }
-
-    // Some endpoints return null/empty body (e.g., merge/image POST)
-    const contentType = response.headers.get("content-type");
-    if (contentType && contentType.includes("application/json")) {
-        const json = await response.json();
-        if (json && typeof json === 'object' && json.result === false && typeof json.error === "number") {
-            const msg = getErrorMessage(json.error);
-            message.error(msg);
-            throw new Error(msg);
-        }
-
-        // Return the actual data payload if the request was successful
-        if (json && typeof json === 'object' && 'data' in json) {
-            return json.data;
-        }
-        return json;
-    }
-    return null as any;
 }
 
 // GET admin/report
