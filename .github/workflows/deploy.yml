@@ -1,0 +1,42 @@
+name: Deploy React App to Cloudflare R2
+
+on:
+  push:
+    branches:
+      - main # main 브랜치에 push(또는 merge) 될 때 실행됩니다.
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest # 가장 권장하는 Linux(Ubuntu) 환경입니다.
+
+    steps:
+      # 1. GitHub 레포지토리의 코드를 가져옵니다.
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Node.js 환경을 세팅합니다.
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      # 3. 패키지를 설치합니다.
+      - name: Install dependencies
+        run: npm ci
+
+      # 4. TypeScript + React 프로젝트를 빌드합니다.
+      - name: Build project
+        run: npm run build 
+
+      # 5. Cloudflare R2로 빌드 결과물을 업로드합니다.
+      # R2는 S3와 호환되므로 AWS CLI를 그대로 사용하면 됩니다.
+      - name: Upload to Cloudflare R2
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          AWS_EC2_METADATA_DISABLED: true # 불필요한 경고 메시지 방지
+        run: |
+          aws s3 sync ./dist s3://${{ secrets.R2_BUCKET_NAME }}/admin \
+            --endpoint-url https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com \
+            --delete

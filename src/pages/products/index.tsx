@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import {
     Table,
     Input,
+    Button,
     message,
     Modal,
     Descriptions,
@@ -11,13 +12,15 @@ import {
     Tag,
     Rate,
     Image,
+    Card,
+    Select,
 } from "antd";
-import { fetchProducts, getProductDetail } from "../../api/admin";
-import { ProductInfo } from "../../types/api";
+import { fetchProducts, getProductDetail, updateProduct, updateImage, getMainImage, uploadImage, mergeProduct } from "../../api/admin";
+import { ProductInfo, UpdateProductRequest } from "../../types/api";
 
-const PRODUCT_TYPES = ["whisky", "wine", "beer", "soju", "liqueur", "cocktail", "coffee", "beverage", "other"];
+const PRODUCT_TYPES = ["whisky", "wine", "beer", "soju/sake", "liqueur/spirit", "cocktail", "coffee", "beverage", "other"];
 
-const { Title } = Typography;
+const { Title, Text } = Typography;
 const { Search } = Input;
 
 export const ProductList: React.FC = () => {
@@ -32,6 +35,18 @@ export const ProductList: React.FC = () => {
     const [isModalVisible, setIsModalVisible] = useState<boolean>(false);
     const [selectedProduct, setSelectedProduct] = useState<ProductInfo | null>(null);
     const [modalLoading, setModalLoading] = useState<boolean>(false);
+
+    // Edit States
+    const [editForm, setEditForm] = useState<{ name: string; desc: string; type: number }>({ name: "", desc: "", type: 0 });
+    const [mainImageId, setMainImageId] = useState<string | null>(null);
+    const [isModified, setIsModified] = useState<boolean>(false);
+    const [saving, setSaving] = useState<boolean>(false);
+
+    // Merge States
+    const [toProductId, setToProductId] = useState<string>("");
+    const [mergeConfirmVisible, setMergeConfirmVisible] = useState<boolean>(false);
+    const [toProductDetail, setToProductDetail] = useState<ProductInfo | null>(null);
+    const [merging, setMerging] = useState<boolean>(false);
 
     const loadProducts = async (search: string, page: number) => {
         setLoading(true);
@@ -62,14 +77,135 @@ export const ProductList: React.FC = () => {
         setIsModalVisible(true);
         setModalLoading(true);
         try {
-            const detail = await getProductDetail(record.product.id);
+            const [detail, mainImage] = await Promise.all([
+                getProductDetail(record.product.id),
+                getMainImage(record.product.id)
+            ]);
+
             setSelectedProduct(detail);
+            setMainImageId(mainImage.image_id);
+            setEditForm({
+                name: detail.product.name,
+                desc: detail.product.desc || "",
+                type: detail.product.type
+            });
+            setIsModified(false);
         } catch (error) {
-            console.error("Failed to fetch product detail:", error);
+            console.error("Failed to fetch product detail or main image:", error);
             message.error("제품 상세 정보를 불러오는 데 실패했습니다.");
             setIsModalVisible(false);
         } finally {
             setModalLoading(false);
+        }
+    };
+
+    const handleInputChange = (field: "name" | "desc" | "type", value: string | number) => {
+        const newForm = { ...editForm, [field]: value };
+        setEditForm(newForm as any);
+
+        if (selectedProduct) {
+            const isNameModified = newForm.name !== selectedProduct.product.name;
+            const isDescModified = newForm.desc !== (selectedProduct.product.desc || "");
+            const isTypeModified = newForm.type !== selectedProduct.product.type;
+            setIsModified(isNameModified || isDescModified || isTypeModified);
+        }
+    };
+
+    const handleSaveChanges = async () => {
+        if (!selectedProduct) return;
+
+        setSaving(true);
+        const updateData: UpdateProductRequest = {
+            product_id: selectedProduct.product.id,
+        };
+
+        if (editForm.name !== selectedProduct.product.name) updateData.name = editForm.name;
+        if (editForm.desc !== (selectedProduct.product.desc || "")) updateData.desc = editForm.desc;
+        if (editForm.type !== selectedProduct.product.type) updateData.type = editForm.type;
+
+        try {
+            await updateProduct(updateData);
+            message.success("제품 정보가 수정되었습니다.");
+            setIsModified(false);
+            // Refresh detail and list
+            const updatedDetail = await getProductDetail(selectedProduct.product.id);
+            setSelectedProduct(updatedDetail);
+            loadProducts(searchText, currentPage);
+        } catch (error) {
+            console.error("Failed to update product:", error);
+            // Error message is already handled in apiFetch
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleImageChange = async (imageId: string | null, file: File) => {
+        if (!selectedProduct) return;
+
+        const hideLoading = message.loading(imageId ? "이미지를 변경 중입니다..." : "이미지를 등록 중입니다...", 0);
+        try {
+            if (imageId) {
+                // 기존 이미지 수정
+                await updateImage(imageId, file);
+                message.success("이미지가 성공적으로 변경되었습니다.");
+            } else {
+                // 신규 이미지 등록
+                await uploadImage(file, selectedProduct.product.id);
+                message.success("이미지가 성공적으로 등록되었습니다.");
+            }
+
+            // Refresh main image
+            const mainImage = await getMainImage(selectedProduct.product.id);
+            setMainImageId(mainImage.image_id);
+
+            // Also refresh detail for consistency if needed
+            const detail = await getProductDetail(selectedProduct.product.id);
+            setSelectedProduct(detail);
+        } catch (error) {
+            console.error("Failed to update or upload image:", error);
+            // Error already handled in apiFetch
+        } finally {
+            hideLoading();
+        }
+    };
+
+    const handleMergeClick = async () => {
+        if (!toProductId.trim()) {
+            message.warning("병합할 대상 제품 ID를 입력해주세요.");
+            return;
+        }
+        if (selectedProduct && toProductId === selectedProduct.product.id) {
+            message.warning("자기 자신과 병합할 수 없습니다.");
+            return;
+        }
+
+        setModalLoading(true);
+        try {
+            const detail = await getProductDetail(toProductId);
+            setToProductDetail(detail);
+            setMergeConfirmVisible(true);
+        } catch (error) {
+            console.error("Failed to fetch target product detail for merge:", error);
+            message.error("대상 제품 정보를 가져오는데 실패했습니다. ID를 확인해주세요.");
+        } finally {
+            setModalLoading(false);
+        }
+    };
+
+    const handleFinalMerge = async () => {
+        if (!selectedProduct || !toProductId) return;
+
+        setMerging(true);
+        try {
+            await mergeProduct(selectedProduct.product.id, toProductId);
+            message.success("제품이 성공적으로 병합되었습니다.");
+            setMergeConfirmVisible(false);
+            setIsModalVisible(false);
+            loadProducts(searchText, currentPage);
+        } catch (error) {
+            console.error("Merge failed:", error);
+        } finally {
+            setMerging(false);
         }
     };
 
@@ -145,8 +281,22 @@ export const ProductList: React.FC = () => {
                 onCancel={() => {
                     setIsModalVisible(false);
                     setSelectedProduct(null);
+                    setMainImageId(null);
                 }}
-                footer={null}
+                footer={[
+                    <Button key="back" onClick={() => setIsModalVisible(false)}>
+                        닫기
+                    </Button>,
+                    <Button
+                        key="submit"
+                        type="primary"
+                        disabled={!isModified || saving}
+                        loading={saving}
+                        onClick={handleSaveChanges}
+                    >
+                        수정
+                    </Button>
+                ]}
                 width={700}
                 destroyOnClose
             >
@@ -159,9 +309,32 @@ export const ProductList: React.FC = () => {
                 ) : selectedProduct ? (
                     <Descriptions bordered column={1} size="small" labelStyle={{ width: "150px", fontWeight: "bold" }}>
                         <Descriptions.Item label="고유 ID">{selectedProduct.product.id}</Descriptions.Item>
-                        <Descriptions.Item label="제품명">{selectedProduct.product.name}</Descriptions.Item>
-                        <Descriptions.Item label="타입">{PRODUCT_TYPES[selectedProduct.product.type] || String(selectedProduct.product.type)}</Descriptions.Item>
-                        <Descriptions.Item label="설명">{selectedProduct.product.desc || "-"}</Descriptions.Item>
+                        <Descriptions.Item label="제품명">
+                            <Input
+                                value={editForm.name}
+                                onChange={(e) => handleInputChange("name", e.target.value)}
+                            />
+                        </Descriptions.Item>
+                        <Descriptions.Item label="타입">
+                            <Select
+                                value={editForm.type}
+                                onChange={(value) => handleInputChange("type", value)}
+                                style={{ width: "100%" }}
+                            >
+                                {PRODUCT_TYPES.map((type, index) => (
+                                    <Select.Option key={index} value={index}>
+                                        {type}
+                                    </Select.Option>
+                                ))}
+                            </Select>
+                        </Descriptions.Item>
+                        <Descriptions.Item label="설명">
+                            <Input.TextArea
+                                value={editForm.desc}
+                                onChange={(e) => handleInputChange("desc", e.target.value)}
+                                rows={4}
+                            />
+                        </Descriptions.Item>
                         <Descriptions.Item label="평점">{selectedProduct.product.rating != null ? <Rate disabled allowHalf value={selectedProduct.product.rating / 2} /> : "-"}</Descriptions.Item>
                         <Descriptions.Item label="노트 수">{selectedProduct.product.note_count ?? 0}</Descriptions.Item>
                         <Descriptions.Item label="즐겨찾기 수">{selectedProduct.favorite_count ?? "-"}</Descriptions.Item>
@@ -174,23 +347,74 @@ export const ProductList: React.FC = () => {
                             )}
                         </Descriptions.Item>
                         <Descriptions.Item label="제품 이미지">
-                            {selectedProduct.image_ids && selectedProduct.image_ids.length > 0 ? (
-                                <Space wrap>
-                                    {selectedProduct.image_ids.map((id: string) => (
-                                        <Image
-                                            key={id}
-                                            width={100}
-                                            height={100}
-                                            src={`/static/images/${id}`}
-                                            alt="제품 이미지"
-                                            style={{ objectFit: "cover", borderRadius: "8px" }}
-                                            fallback="https://via.placeholder.com/100?text=No+Image"
-                                        />
-                                    ))}
-                                </Space>
+                            {mainImageId ? (
+                                <div style={{ textAlign: "center", width: "fit-content" }}>
+                                    <Image
+                                        width={200}
+                                        height={200}
+                                        src={`/images/${mainImageId}`}
+                                        alt="제품 메인 이미지"
+                                        style={{ objectFit: "cover", borderRadius: "12px", border: "1px solid #f0f0f0" }}
+                                        fallback="https://via.placeholder.com/200?text=No+Image"
+                                    />
+                                    <div style={{ marginTop: "12px" }}>
+                                        <Button
+                                            size="middle"
+                                            type="primary"
+                                            ghost
+                                            onClick={() => {
+                                                const input = document.createElement("input");
+                                                input.type = "file";
+                                                input.accept = "image/*";
+                                                input.onchange = (e) => {
+                                                    const file = (e.target as HTMLInputElement).files?.[0];
+                                                    if (file) handleImageChange(mainImageId, file);
+                                                };
+                                                input.click();
+                                            }}
+                                        >
+                                            메인 이미지 변경
+                                        </Button>
+                                    </div>
+                                </div>
                             ) : (
-                                "이미지 없음"
+                                <div style={{ padding: "20px", background: "#fafafa", borderRadius: "8px", textAlign: "center" }}>
+                                    <Text type="secondary">메인 이미지가 등록되지 않았습니다.</Text>
+                                    <div style={{ marginTop: "10px" }}>
+                                        <Button
+                                            size="small"
+                                            type="primary"
+                                            onClick={() => {
+                                                const input = document.createElement("input");
+                                                input.type = "file";
+                                                input.accept = "image/*";
+                                                input.onchange = (e) => {
+                                                    const file = (e.target as HTMLInputElement).files?.[0];
+                                                    if (file) handleImageChange(null, file);
+                                                };
+                                                input.click();
+                                            }}
+                                        >
+                                            이미지 등록
+                                        </Button>
+                                    </div>
+                                </div>
                             )}
+                        </Descriptions.Item>
+                        <Descriptions.Item label="제품 병합">
+                            <Space.Compact style={{ width: '100%' }}>
+                                <Input
+                                    placeholder="병합할 대상 제품 ID (To ID)"
+                                    value={toProductId}
+                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setToProductId(e.target.value)}
+                                />
+                                <Button type="primary" danger onClick={handleMergeClick}>
+                                    Merge
+                                </Button>
+                            </Space.Compact>
+                            <Text type="secondary" style={{ fontSize: '12px' }}>
+                                * 주의: 현재 제품의 데이터가 입력한 제품 ID로 병합되며, 현재 제품은 삭제될 수 있습니다.
+                            </Text>
                         </Descriptions.Item>
                     </Descriptions>
                 ) : (
@@ -198,6 +422,35 @@ export const ProductList: React.FC = () => {
                         데이터가 없습니다.
                     </div>
                 )}
+            </Modal>
+
+            {/* Merge Confirmation Modal */}
+            <Modal
+                title="제품 병합 확인"
+                open={mergeConfirmVisible}
+                onCancel={() => setMergeConfirmVisible(false)}
+                onOk={handleFinalMerge}
+                confirmLoading={merging}
+                okText="최종 병합 실행"
+                cancelText="취소"
+                okButtonProps={{ danger: true }}
+                width={600}
+            >
+                <div style={{ marginBottom: '16px' }}>
+                    <Text strong>다음 제품으로 병합하시겠습니까?</Text>
+                </div>
+                {toProductDetail && (
+                    <Card size="small" title="대상 제품 정보 (Raw Data)" style={{ background: '#f5f5f5' }}>
+                        <pre style={{ margin: 0, fontSize: '11px', maxHeight: '300px', overflow: 'auto' }}>
+                            {JSON.stringify(toProductDetail, null, 2)}
+                        </pre>
+                    </Card>
+                )}
+                <div style={{ marginTop: '16px' }}>
+                    <Text type="danger" strong>
+                        ⚠️ 이 작업은 되돌릴 수 없습니다. 병합하시겠습니까?
+                    </Text>
+                </div>
             </Modal>
         </div>
     );

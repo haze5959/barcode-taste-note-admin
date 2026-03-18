@@ -194,7 +194,7 @@ const selectedProductImages = (ids: string[]) => {
                     key={id}
                     width={100}
                     height={100}
-                    src={`/static/images/${id}`}
+                    src={`/images/${id}`}
                     alt="노트 이미지"
                     style={{ objectFit: "cover", borderRadius: "8px" }}
                     fallback="https://via.placeholder.com/100?text=No+Image"

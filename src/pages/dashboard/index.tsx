@@ -7,7 +7,6 @@ import {
     AppstoreAddOutlined,
     ProfileOutlined,
     WarningOutlined,
-    MergeCellsOutlined,
     PictureOutlined,
     CalendarOutlined,
     ClockCircleOutlined,
@@ -133,13 +132,7 @@ export const Dashboard: React.FC = () => {
                                 </Button>
                             </Link>
                         </Col>
-                        <Col xs={12} sm={8} md={4}>
-                            <Link to="/products/edit">
-                                <Button block size="large" icon={<AppstoreAddOutlined style={{ fontSize: '24px', color: '#722ed1' }} />} style={{ height: "100px", borderRadius: "12px", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", gap: "10px", borderColor: '#722ed1' }}>
-                                    <Text strong style={{ color: '#722ed1' }}>제품 정보 수정</Text>
-                                </Button>
-                            </Link>
-                        </Col>
+
                         <Col xs={12} sm={8} md={4}>
                             <Link to="/reports">
                                 <Button block size="large" danger icon={<WarningOutlined style={{ fontSize: '24px' }} />} style={{ height: "100px", borderRadius: "12px", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", gap: "10px" }}>
@@ -147,20 +140,8 @@ export const Dashboard: React.FC = () => {
                                 </Button>
                             </Link>
                         </Col>
-                        <Col xs={12} sm={8} md={4}>
-                            <Link to="/products/merge">
-                                <Button block size="large" type="dashed" icon={<MergeCellsOutlined style={{ fontSize: '24px' }} />} style={{ height: "100px", borderRadius: "12px", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", gap: "10px" }}>
-                                    <Text strong type="secondary">제품 Merge</Text>
-                                </Button>
-                            </Link>
-                        </Col>
-                        <Col xs={12} sm={8} md={4}>
-                            <Link to="/products/image">
-                                <Button block size="large" type="dashed" icon={<PictureOutlined style={{ fontSize: '24px' }} />} style={{ height: "100px", borderRadius: "12px", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", gap: "10px" }}>
-                                    <Text strong type="secondary">메인 이미지 변경</Text>
-                                </Button>
-                            </Link>
-                        </Col>
+
+
                     </Row>
                 </>
             )}

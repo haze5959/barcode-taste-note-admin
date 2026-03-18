@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { Refine, Authenticated } from "@refinedev/core";
 import { ThemedLayoutV2, ErrorComponent, RefineThemes, useNotificationProvider } from "@refinedev/antd";
+import { message } from "antd";
 import { BrowserRouter, Routes, Route, Outlet } from "react-router-dom";
 import routerProvider, { NavigateToResource, CatchAllNavigate, DocumentTitleHandler, UnsavedChangesNotifier } from "@refinedev/react-router-v6";
 import { useAuth0 } from "@auth0/auth0-react";
@@ -13,11 +14,19 @@ import { Login } from "./pages/login";
 import { Dashboard } from "./pages/dashboard";
 import { ProductList } from "./pages/products";
 import { NotesList } from "./pages/notes"; // 새로 추가된 노트 리스트 페이지
+import { ReportsList } from "./pages/reports"; // 새로 추가된 신고 리스트 페이지
 import { setupApiInterceptor } from "./api/admin";
 
 
 const App = () => {
     const auth0 = useAuth0();
+    const { error } = auth0;
+
+    useEffect(() => {
+        if (error) {
+            message.error(`로그인 중 오류가 발생했습니다: ${error.message}`);
+        }
+    }, [error]);
 
     useEffect(() => {
         setupApiInterceptor(
@@ -54,6 +63,10 @@ const App = () => {
                         {
                             name: "notes",
                             list: "/notes",
+                        },
+                        {
+                            name: "reports",
+                            list: "/reports",
                         }
                     ]}
                     options={{
@@ -75,6 +88,7 @@ const App = () => {
                             <Route index element={<Dashboard />} />
                             <Route path="/products" element={<ProductList />} />
                             <Route path="/notes" element={<NotesList />} />
+                            <Route path="/reports" element={<ReportsList />} />
                             <Route path="*" element={<ErrorComponent />} />
                         </Route>
 
