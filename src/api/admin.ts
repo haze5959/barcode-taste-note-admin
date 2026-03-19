@@ -198,6 +198,11 @@ export function fetchProducts(search: string | null, index: number): Promise<Pro
     return apiFetch<ProductInfo[]>(`/products?${params.toString()}`);
 }
 
+// GET /admin/product/barcodes
+export function getProductBarcodes(productId: string): Promise<string[]> {
+    return apiFetch<string[]>(`/admin/product/barcodes?product_id=${productId}`);
+}
+
 // GET /admin/notes
 export function fetchNotes(index: number, per: number = 20): Promise<NoteInfo[]> {
     const params = new URLSearchParams({

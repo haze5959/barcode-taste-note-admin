@@ -15,7 +15,7 @@ import {
     Card,
     Select,
 } from "antd";
-import { fetchProducts, getProductDetail, updateProduct, updateImage, getMainImage, uploadImage, mergeProduct } from "../../api/admin";
+import { fetchProducts, getProductDetail, updateProduct, updateImage, getMainImage, uploadImage, mergeProduct, getProductBarcodes } from "../../api/admin";
 import { ProductInfo, UpdateProductRequest } from "../../types/api";
 
 const PRODUCT_TYPES = ["whisky", "wine", "beer", "soju/sake", "liqueur/spirit", "cocktail", "coffee", "beverage", "other"];
@@ -41,6 +41,7 @@ export const ProductList: React.FC = () => {
     const [mainImageId, setMainImageId] = useState<string | null>(null);
     const [isModified, setIsModified] = useState<boolean>(false);
     const [saving, setSaving] = useState<boolean>(false);
+    const [barcodes, setBarcodes] = useState<string[]>([]);
 
     // Merge States
     const [toProductId, setToProductId] = useState<string>("");
@@ -77,13 +78,15 @@ export const ProductList: React.FC = () => {
         setIsModalVisible(true);
         setModalLoading(true);
         try {
-            const [detail, mainImage] = await Promise.all([
+            const [detail, mainImage, barcodeList] = await Promise.all([
                 getProductDetail(record.product.id),
-                getMainImage(record.product.id)
+                getMainImage(record.product.id),
+                getProductBarcodes(record.product.id)
             ]);
 
             setSelectedProduct(detail);
             setMainImageId(mainImage.image_id);
+            setBarcodes(barcodeList);
             setEditForm({
                 name: detail.product.name,
                 desc: detail.product.desc || "",
@@ -214,30 +217,36 @@ export const ProductList: React.FC = () => {
             title: "이름",
             dataIndex: ["product", "name"],
             key: "name",
+            width: 280,
+            ellipsis: true,
             render: (text: string) => <strong>{text}</strong>,
         },
         {
             title: "타입",
             dataIndex: ["product", "type"],
             key: "type",
+            width: 140,
             render: (type: number) => <Tag color="blue">{PRODUCT_TYPES[type] || String(type)}</Tag>,
         },
         {
             title: "별점",
             dataIndex: ["product", "rating"],
             key: "rating",
+            width: 200,
             render: (val: number | null) => val != null ? <Rate disabled allowHalf value={val / 2} /> : "-",
         },
         {
             title: "노트 수",
             dataIndex: ["product", "note_count"],
             key: "note_count",
+            width: 90,
             render: (val?: number) => `${val ?? 0}개`,
         },
         {
             title: "등록일",
             dataIndex: ["product", "registered"],
             key: "registered",
+            width: 160,
             render: (val: string) => new Date(val).toLocaleString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }),
         },
     ];
@@ -263,6 +272,7 @@ export const ProductList: React.FC = () => {
                 columns={columns}
                 rowKey={(record) => record.product.id}
                 loading={loading}
+                scroll={{ x: "max-content" }}
                 onRow={(record) => ({
                     onClick: () => handleRowClick(record),
                     style: { cursor: "pointer" }
@@ -282,6 +292,7 @@ export const ProductList: React.FC = () => {
                     setIsModalVisible(false);
                     setSelectedProduct(null);
                     setMainImageId(null);
+                    setBarcodes([]);
                 }}
                 footer={[
                     <Button key="back" onClick={() => setIsModalVisible(false)}>
@@ -299,6 +310,8 @@ export const ProductList: React.FC = () => {
                 ]}
                 width={700}
                 destroyOnClose
+                style={{ top: 20 }}
+                styles={{ body: { overflowY: "auto", maxHeight: "calc(80vh - 120px)" } }}
             >
                 {modalLoading ? (
                     <div style={{ textAlign: "center", padding: "50px 0" }}>
@@ -338,6 +351,19 @@ export const ProductList: React.FC = () => {
                         <Descriptions.Item label="평점">{selectedProduct.product.rating != null ? <Rate disabled allowHalf value={selectedProduct.product.rating / 2} /> : "-"}</Descriptions.Item>
                         <Descriptions.Item label="노트 수">{selectedProduct.product.note_count ?? 0}</Descriptions.Item>
                         <Descriptions.Item label="즐겨찾기 수">{selectedProduct.favorite_count ?? "-"}</Descriptions.Item>
+                        <Descriptions.Item label="바코드">
+                            {barcodes.length > 0 ? (
+                                <Space size={[4, 6]} wrap>
+                                    {barcodes.map((barcode) => (
+                                        <Tag key={barcode} color="geekblue" style={{ fontFamily: "monospace", fontSize: "13px" }}>
+                                            {barcode}
+                                        </Tag>
+                                    ))}
+                                </Space>
+                            ) : (
+                                <Text type="secondary">등록된 바코드가 없습니다.</Text>
+                            )}
+                        </Descriptions.Item>
                         <Descriptions.Item label="등록일">{new Date(selectedProduct.product.registered).toLocaleString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}</Descriptions.Item>
                         <Descriptions.Item label="플레이버 정보">
                             {selectedProduct.product.flavor_infos ? (
