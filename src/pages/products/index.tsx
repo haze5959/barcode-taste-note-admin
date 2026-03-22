@@ -15,7 +15,7 @@ import {
     Card,
     Select,
 } from "antd";
-import { fetchProducts, getProductDetail, updateProduct, updateImage, getMainImage, uploadImage, mergeProduct, getProductBarcodes } from "../../api/admin";
+import { fetchProducts, getProductDetail, updateProduct, updateImage, getMainImage, uploadImage, mergeProduct, getProductBarcodes, updateImageUrl } from "../../api/admin";
 import { ProductInfo, UpdateProductRequest } from "../../types/api";
 
 const PRODUCT_TYPES = ["whisky", "wine", "beer", "soju/sake", "liqueur/spirit", "cocktail", "coffee", "beverage", "other"];
@@ -42,6 +42,10 @@ export const ProductList: React.FC = () => {
     const [isModified, setIsModified] = useState<boolean>(false);
     const [saving, setSaving] = useState<boolean>(false);
     const [barcodes, setBarcodes] = useState<string[]>([]);
+
+    // Image URL States
+    const [imageUrlInput, setImageUrlInput] = useState<string>("");
+    const [isFetchingUrl, setIsFetchingUrl] = useState<boolean>(false);
 
     // Merge States
     const [toProductId, setToProductId] = useState<string>("");
@@ -172,6 +176,33 @@ export const ProductList: React.FC = () => {
         }
     };
 
+    const handleImageUrlSubmit = async (imageId: string | null) => {
+        if (!imageUrlInput.trim()) {
+            message.warning("이미지 URL을 입력해주세요.");
+            return;
+        }
+        if (!selectedProduct) return;
+
+        const targetImageId = imageId || crypto.randomUUID();
+        const hideLoading = message.loading("이미지 URL을 전송 중입니다...", 0);
+        setIsFetchingUrl(true);
+        try {
+            await updateImageUrl(targetImageId, imageUrlInput);
+            message.success("이미지가 성공적으로 변경/등록되었습니다.");
+            
+            // Refresh main image
+            const mainImage = await getMainImage(selectedProduct.product.id);
+            setMainImageId(mainImage.image_id);
+            setImageUrlInput("");
+        } catch (error) {
+            console.error("Failed to update image from URL:", error);
+            // Error handling is already in apiFetch
+        } finally {
+            hideLoading();
+            setIsFetchingUrl(false);
+        }
+    };
+
     const handleMergeClick = async () => {
         if (!toProductId.trim()) {
             message.warning("병합할 대상 제품 ID를 입력해주세요.");
@@ -297,6 +328,7 @@ export const ProductList: React.FC = () => {
                     setBarcodes([]);
                     setToProductId("");
                     setToProductDetail(null);
+                    setImageUrlInput("");
                 }}
                 footer={[
                     <Button key="back" onClick={() => setIsModalVisible(false)}>
@@ -388,45 +420,83 @@ export const ProductList: React.FC = () => {
                                         fallback="https://via.placeholder.com/200?text=No+Image"
                                     />
                                     <div style={{ marginTop: "12px" }}>
-                                        <Button
-                                            size="middle"
-                                            type="primary"
-                                            ghost
-                                            onClick={() => {
-                                                const input = document.createElement("input");
-                                                input.type = "file";
-                                                input.accept = "image/*";
-                                                input.onchange = (e) => {
-                                                    const file = (e.target as HTMLInputElement).files?.[0];
-                                                    if (file) handleImageChange(mainImageId, file);
-                                                };
-                                                input.click();
-                                            }}
-                                        >
-                                            메인 이미지 변경
-                                        </Button>
+                                        <Space direction="vertical" style={{ width: "100%" }}>
+                                            <Button
+                                                size="middle"
+                                                type="primary"
+                                                ghost
+                                                block
+                                                onClick={() => {
+                                                    const input = document.createElement("input");
+                                                    input.type = "file";
+                                                    input.accept = "image/*";
+                                                    input.onchange = (e) => {
+                                                        const file = (e.target as HTMLInputElement).files?.[0];
+                                                        if (file) handleImageChange(mainImageId, file);
+                                                    };
+                                                    input.click();
+                                                }}
+                                            >
+                                                메인 이미지 변경 (파일)
+                                            </Button>
+                                            <Space.Compact style={{ width: '100%' }}>
+                                                <Input
+                                                    placeholder="이미지 URL 입력"
+                                                    value={imageUrlInput}
+                                                    onChange={(e) => setImageUrlInput(e.target.value)}
+                                                    onPressEnter={() => handleImageUrlSubmit(mainImageId)}
+                                                />
+                                                <Button 
+                                                    type="primary" 
+                                                    onClick={() => handleImageUrlSubmit(mainImageId)}
+                                                    loading={isFetchingUrl}
+                                                >
+                                                    URL로 변경
+                                                </Button>
+                                            </Space.Compact>
+                                        </Space>
                                     </div>
                                 </div>
                             ) : (
                                 <div style={{ padding: "20px", background: "#fafafa", borderRadius: "8px", textAlign: "center" }}>
                                     <Text type="secondary">메인 이미지가 등록되지 않았습니다.</Text>
-                                    <div style={{ marginTop: "10px" }}>
-                                        <Button
-                                            size="small"
-                                            type="primary"
-                                            onClick={() => {
-                                                const input = document.createElement("input");
-                                                input.type = "file";
-                                                input.accept = "image/*";
-                                                input.onchange = (e) => {
-                                                    const file = (e.target as HTMLInputElement).files?.[0];
-                                                    if (file) handleImageChange(null, file);
-                                                };
-                                                input.click();
-                                            }}
-                                        >
-                                            이미지 등록
-                                        </Button>
+                                    <div style={{ marginTop: "10px", display: "flex", justifyContent: "center" }}>
+                                        <Space direction="vertical" style={{ width: "100%", maxWidth: 300 }}>
+                                            <Button
+                                                size="small"
+                                                type="primary"
+                                                block
+                                                onClick={() => {
+                                                    const input = document.createElement("input");
+                                                    input.type = "file";
+                                                    input.accept = "image/*";
+                                                    input.onchange = (e) => {
+                                                        const file = (e.target as HTMLInputElement).files?.[0];
+                                                        if (file) handleImageChange(null, file);
+                                                    };
+                                                    input.click();
+                                                }}
+                                            >
+                                                이미지 등록 (파일)
+                                            </Button>
+                                            <Space.Compact style={{ width: '100%' }}>
+                                                <Input
+                                                    size="small"
+                                                    placeholder="이미지 URL 입력"
+                                                    value={imageUrlInput}
+                                                    onChange={(e) => setImageUrlInput(e.target.value)}
+                                                    onPressEnter={() => handleImageUrlSubmit(null)}
+                                                />
+                                                <Button 
+                                                    size="small"
+                                                    type="primary" 
+                                                    onClick={() => handleImageUrlSubmit(null)}
+                                                    loading={isFetchingUrl}
+                                                >
+                                                    URL로 등록
+                                                </Button>
+                                            </Space.Compact>
+                                        </Space>
                                     </div>
                                 </div>
                             )}

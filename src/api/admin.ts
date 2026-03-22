@@ -152,6 +152,14 @@ export function mergeProduct(productId: string, toProductId: string): Promise<nu
     });
 }
 
+// POST admin/image/url
+export function updateImageUrl(imageId: string, imageUrl: string): Promise<null> {
+    return apiFetch<null>("/admin/image/url", {
+        method: "POST",
+        body: JSON.stringify({ image_id: imageId, add_image_url: imageUrl }),
+    });
+}
+
 // POST admin/image
 export function updateImage(imageId: string, imageFile: File): Promise<null> {
     const formData = new FormData();
