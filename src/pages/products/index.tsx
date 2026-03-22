@@ -204,6 +204,8 @@ export const ProductList: React.FC = () => {
             message.success("제품이 성공적으로 병합되었습니다.");
             setMergeConfirmVisible(false);
             setIsModalVisible(false);
+            setToProductId("");
+            setToProductDetail(null);
             loadProducts(searchText, currentPage);
         } catch (error) {
             console.error("Merge failed:", error);
@@ -293,6 +295,8 @@ export const ProductList: React.FC = () => {
                     setSelectedProduct(null);
                     setMainImageId(null);
                     setBarcodes([]);
+                    setToProductId("");
+                    setToProductDetail(null);
                 }}
                 footer={[
                     <Button key="back" onClick={() => setIsModalVisible(false)}>
@@ -461,6 +465,8 @@ export const ProductList: React.FC = () => {
                 cancelText="취소"
                 okButtonProps={{ danger: true }}
                 width={600}
+                zIndex={1050}
+                destroyOnClose
             >
                 <div style={{ marginBottom: '16px' }}>
                     <Text strong>다음 제품으로 병합하시겠습니까?</Text>
