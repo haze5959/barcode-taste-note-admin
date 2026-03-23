@@ -153,10 +153,14 @@ export function mergeProduct(productId: string, toProductId: string): Promise<nu
 }
 
 // POST admin/image/url
-export function updateImageUrl(imageId: string, imageUrl: string): Promise<null> {
+export function updateImageUrl(imageUrl: string, imageId?: string, productId?: string): Promise<null> {
+    const payload: any = { add_image_url: imageUrl };
+    if (imageId) payload.image_id = imageId;
+    if (productId) payload.product_id = productId;
+
     return apiFetch<null>("/admin/image/url", {
         method: "POST",
-        body: JSON.stringify({ image_id: imageId, add_image_url: imageUrl }),
+        body: JSON.stringify(payload),
     });
 }
 
@@ -184,6 +188,11 @@ export function uploadImage(file: File, productId?: string, noteId?: string): Pr
         method: "POST",
         body: formData,
     });
+}
+
+// GET /users/:id
+export function getUserDetail(id: string): Promise<import("../types/api").UserDetailResponse> {
+    return apiFetch<import("../types/api").UserDetailResponse>(`/users/${id}`);
 }
 
 // GET /products/:id

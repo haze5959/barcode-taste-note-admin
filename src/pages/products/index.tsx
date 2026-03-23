@@ -183,11 +183,14 @@ export const ProductList: React.FC = () => {
         }
         if (!selectedProduct) return;
 
-        const targetImageId = imageId || crypto.randomUUID();
         const hideLoading = message.loading("이미지 URL을 전송 중입니다...", 0);
         setIsFetchingUrl(true);
         try {
-            await updateImageUrl(targetImageId, imageUrlInput);
+            if (imageId) {
+                await updateImageUrl(imageUrlInput, imageId);
+            } else {
+                await updateImageUrl(imageUrlInput, undefined, selectedProduct.product.id);
+            }
             message.success("이미지가 성공적으로 변경/등록되었습니다.");
             
             // Refresh main image

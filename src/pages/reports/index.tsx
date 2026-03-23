@@ -8,11 +8,12 @@ import {
     message,
     Tag,
     Typography,
+    Spin,
 } from "antd";
-import { getReports, updateReport } from "../../api/admin";
+import { getReports, updateReport, getUserDetail, getProductDetail } from "../../api/admin";
 import { Report } from "../../types/api";
 
-const { Title } = Typography;
+const { Title, Text } = Typography;
 const { TextArea } = Input;
 
 export const ReportsList: React.FC = () => {
@@ -23,12 +24,17 @@ export const ReportsList: React.FC = () => {
     const [reply, setReply] = useState<string>("");
     const [sending, setSending] = useState<boolean>(false);
 
+    // Detail states for the modal
+    const [targetUser, setTargetUser] = useState<any>(null);
+    const [targetProduct, setTargetProduct] = useState<any>(null);
+    const [detailLoading, setDetailLoading] = useState<boolean>(false);
+
     const loadReports = async () => {
         setLoading(true);
         try {
             const data = await getReports();
             // Sort by registered date descending (newest first)
-            const sortedData = [...data].sort((a, b) => 
+            const sortedData = [...data].sort((a, b) =>
                 new Date(b.registered).getTime() - new Date(a.registered).getTime()
             );
             setReports(sortedData);
@@ -44,10 +50,30 @@ export const ReportsList: React.FC = () => {
         loadReports();
     }, []);
 
-    const handleRowClick = (record: Report) => {
+    const handleRowClick = async (record: Report) => {
         setSelectedReport(record);
         setReply(record.reply || "");
         setIsModalVisible(true);
+
+        setDetailLoading(true);
+        setTargetUser(null);
+        setTargetProduct(null);
+        try {
+            const [userRes, productRes] = await Promise.all([
+                getUserDetail(record.user_id).catch(() => null),
+                getProductDetail(record.product_id).catch(() => null)
+            ]);
+            setTargetUser(userRes);
+
+            if (productRes && productRes.image_ids) {
+                productRes.image_ids = productRes.image_ids.slice(0, 3);
+            }
+            setTargetProduct(productRes);
+        } catch (error) {
+            console.error("Failed to load details:", error);
+        } finally {
+            setDetailLoading(false);
+        }
     };
 
     const handleSendReply = async () => {
@@ -104,8 +130,8 @@ export const ReportsList: React.FC = () => {
             title: "등록일",
             dataIndex: "registered",
             key: "registered",
-            render: (val: string) => new Date(val).toLocaleString('ko-KR', { 
-                year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' 
+            render: (val: string) => new Date(val).toLocaleString('ko-KR', {
+                year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
             }),
         },
     ];
@@ -150,7 +176,7 @@ export const ReportsList: React.FC = () => {
                 {selectedReport && (
                     <Descriptions bordered column={1} size="small" labelStyle={{ width: "150px", fontWeight: "bold" }}>
                         <Descriptions.Item label="신고 ID">{selectedReport.id}</Descriptions.Item>
-                        <Descriptions.Item label="대상 ID (Product/Note)">{selectedReport.product_id}</Descriptions.Item>
+                        <Descriptions.Item label="Product ID">{selectedReport.product_id}</Descriptions.Item>
                         <Descriptions.Item label="신고 유저 ID">{selectedReport.user_id}</Descriptions.Item>
                         <Descriptions.Item label="신고 일시">
                             {new Date(selectedReport.registered).toLocaleString('ko-KR')}
@@ -159,6 +185,28 @@ export const ReportsList: React.FC = () => {
                             <div style={{ whiteSpace: "pre-wrap", background: "#f9f9f9", padding: "12px", borderRadius: "8px" }}>
                                 {selectedReport.body}
                             </div>
+                        </Descriptions.Item>
+                        <Descriptions.Item label="신고 유저 상세">
+                            {detailLoading ? (
+                                <Spin size="small" />
+                            ) : targetUser ? (
+                                <pre style={{ margin: 0, padding: "8px", background: "#f5f5f5", borderRadius: "4px", fontSize: "11px", overflowX: "auto", maxHeight: "200px" }}>
+                                    {JSON.stringify(targetUser, null, 2)}
+                                </pre>
+                            ) : (
+                                <Text type="secondary">유저 정보가 없습니다.</Text>
+                            )}
+                        </Descriptions.Item>
+                        <Descriptions.Item label="신고 제품 상세">
+                            {detailLoading ? (
+                                <Spin size="small" />
+                            ) : targetProduct ? (
+                                <pre style={{ margin: 0, padding: "8px", background: "#f5f5f5", borderRadius: "4px", fontSize: "11px", overflowX: "auto", maxHeight: "200px" }}>
+                                    {JSON.stringify(targetProduct, null, 2)}
+                                </pre>
+                            ) : (
+                                <Text type="secondary">제품 정보가 없습니다.</Text>
+                            )}
                         </Descriptions.Item>
                         <Descriptions.Item label="관리자 답변">
                             <TextArea

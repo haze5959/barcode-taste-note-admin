@@ -71,6 +71,12 @@ export interface User {
     image_id: string | null;
 }
 
+export interface UserDetailResponse {
+    user: User;
+    note_count: number;
+    follower_count: number;
+}
+
 export interface ProductInfo {
     id: string; // Uuid
     product: Product;
