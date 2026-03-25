@@ -9,6 +9,7 @@ import {
     Tag,
     Typography,
     Spin,
+    Image,
 } from "antd";
 import { getReports, updateReport, getUserDetail, getProductDetail } from "../../api/admin";
 import { Report } from "../../types/api";
@@ -59,10 +60,13 @@ export const ReportsList: React.FC = () => {
         setTargetUser(null);
         setTargetProduct(null);
         try {
-            const [userRes, productRes] = await Promise.all([
-                getUserDetail(record.user_id).catch(() => null),
-                getProductDetail(record.product_id).catch(() => null)
-            ]);
+            const userReq = getUserDetail(record.user_id).catch(() => null);
+            const productReq = record.type === 1 
+                ? Promise.resolve(null)
+                : getProductDetail(record.product_id).catch(() => null);
+
+            const [userRes, productRes] = await Promise.all([userReq, productReq]);
+            
             setTargetUser(userRes);
 
             if (productRes && productRes.image_ids) {
@@ -103,10 +107,8 @@ export const ReportsList: React.FC = () => {
             key: "type",
             render: (type: number) => {
                 const typeMap: Record<number, string> = {
-                    1: "부적절한 내용",
-                    2: "스팸/광고",
-                    3: "개인정보 노출",
-                    4: "기타"
+                    0: "제품 신고",
+                    1: "기타"
                 };
                 return <Tag color="orange">{typeMap[type] || `기타(${type})`}</Tag>;
             },
@@ -182,7 +184,7 @@ export const ReportsList: React.FC = () => {
                             {new Date(selectedReport.registered).toLocaleString('ko-KR')}
                         </Descriptions.Item>
                         <Descriptions.Item label="신고 내용">
-                            <div style={{ whiteSpace: "pre-wrap", background: "#f9f9f9", padding: "12px", borderRadius: "8px" }}>
+                            <div style={{ maxWidth: 480, whiteSpace: "pre-wrap", wordBreak: "break-all", background: "#f9f9f9", padding: "12px", borderRadius: "8px" }}>
                                 {selectedReport.body}
                             </div>
                         </Descriptions.Item>
@@ -190,7 +192,7 @@ export const ReportsList: React.FC = () => {
                             {detailLoading ? (
                                 <Spin size="small" />
                             ) : targetUser ? (
-                                <pre style={{ margin: 0, padding: "8px", background: "#f5f5f5", borderRadius: "4px", fontSize: "11px", overflowX: "auto", maxHeight: "200px" }}>
+                                <pre style={{ maxWidth: 480, margin: 0, padding: "8px", background: "#f5f5f5", borderRadius: "4px", fontSize: "11px", whiteSpace: "pre-wrap", wordBreak: "break-all", maxHeight: "200px", overflowY: "auto" }}>
                                     {JSON.stringify(targetUser, null, 2)}
                                 </pre>
                             ) : (
@@ -201,9 +203,25 @@ export const ReportsList: React.FC = () => {
                             {detailLoading ? (
                                 <Spin size="small" />
                             ) : targetProduct ? (
-                                <pre style={{ margin: 0, padding: "8px", background: "#f5f5f5", borderRadius: "4px", fontSize: "11px", overflowX: "auto", maxHeight: "200px" }}>
-                                    {JSON.stringify(targetProduct, null, 2)}
-                                </pre>
+                                <div style={{ maxWidth: 480, overflow: "hidden" }}>
+                                    <pre style={{ margin: 0, padding: "8px", background: "#f5f5f5", borderRadius: "4px", fontSize: "11px", whiteSpace: "pre-wrap", wordBreak: "break-all", maxHeight: "200px", overflowY: "auto" }}>
+                                        {JSON.stringify(targetProduct, null, 2)}
+                                    </pre>
+                                    {targetProduct.image_ids && targetProduct.image_ids.length > 0 && (
+                                        <div style={{ marginTop: "12px", display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                                            {targetProduct.image_ids.slice(0, 3).map((imgId: string) => (
+                                                <Image
+                                                    key={imgId}
+                                                    src={`/images/${imgId}`}
+                                                    width={100}
+                                                    height={100}
+                                                    style={{ objectFit: "cover", borderRadius: "8px", border: "1px solid #e8e8e8" }}
+                                                    fallback="https://via.placeholder.com/100?text=No+Image"
+                                                />
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
                             ) : (
                                 <Text type="secondary">제품 정보가 없습니다.</Text>
                             )}
