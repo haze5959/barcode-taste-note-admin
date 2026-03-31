@@ -29,6 +29,7 @@ export interface DashboardStats {
     monthly_note_count: number;
     daily_note_count: number;
     not_reply_report_count: number;
+    premium_user_count: number;
 }
 
 export interface ProductMainImageResponse {
