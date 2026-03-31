@@ -9,6 +9,8 @@ import {
     WarningOutlined,
     CalendarOutlined,
     ClockCircleOutlined,
+    CrownOutlined,
+    DollarOutlined,
 } from "@ant-design/icons";
 import { getDashboard } from "../../api/admin";
 import { DashboardStats } from "../../types/api";
@@ -56,16 +58,28 @@ export const Dashboard: React.FC = () => {
                                     title={<Text strong>총 가입 유저 수</Text>}
                                     value={stats?.registered_user_count ?? 0}
                                     prefix={<UserOutlined style={{ color: "#1890ff" }} />}
-                                    suffix={
-                                        <span style={{ fontSize: "14px", marginLeft: "4px" }}>
-                                            명 <Text type="success" style={{ fontSize: "14px", marginLeft: "8px" }}>(구독자: {stats?.premium_user_count ?? 0}명)</Text>
-                                        </span>
-                                    }
+                                    suffix={<span style={{ fontSize: "14px", marginLeft: "4px" }}>명</span>}
                                 />
                                 <div style={{ marginTop: "16px", paddingTop: "16px", borderTop: "1px solid #f0f0f0" }}>
                                     <Text type="secondary" style={{ fontSize: "14px", display: "flex", alignItems: "center" }}>
                                         <UserAddOutlined style={{ marginRight: "6px" }} />
                                         최근 30일 가입: <strong style={{ marginLeft: "4px", marginRight: "2px" }}>{stats?.monthly_registered_user_count ?? 0}</strong>명
+                                    </Text>
+                                </div>
+                            </Card>
+                        </Col>
+                        <Col xs={24} sm={12} lg={12} xl={6}>
+                            <Card hoverable style={{ borderRadius: "12px", borderLeft: "5px solid #52c41a", boxShadow: "0 2px 8px rgba(0,0,0,0.05)", height: "100%" }}>
+                                <Statistic
+                                    title={<Text strong>구독자 수</Text>}
+                                    value={stats?.premium_user_count ?? 0}
+                                    prefix={<CrownOutlined style={{ color: "#52c41a" }} />}
+                                    suffix={<span style={{ fontSize: "14px", marginLeft: "4px" }}>명</span>}
+                                />
+                                <div style={{ marginTop: "16px", paddingTop: "16px", borderTop: "1px solid #f0f0f0" }}>
+                                    <Text type="secondary" style={{ fontSize: "14px", display: "flex", alignItems: "center" }}>
+                                        <DollarOutlined style={{ marginRight: "6px" }} />
+                                        일일 수익: <strong style={{ marginLeft: "4px", marginRight: "2px", color: "#52c41a" }}>{Math.floor((2000 / 30) * (stats?.premium_user_count ?? 0)).toLocaleString()}</strong>원
                                     </Text>
                                 </div>
                             </Card>
