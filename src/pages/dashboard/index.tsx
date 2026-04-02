@@ -11,6 +11,9 @@ import {
     ClockCircleOutlined,
     CrownOutlined,
     DollarOutlined,
+    GlobalOutlined,
+    AppleOutlined,
+    AndroidOutlined,
 } from "@ant-design/icons";
 import { getDashboard } from "../../api/admin";
 import { DashboardStats } from "../../types/api";
@@ -81,6 +84,27 @@ export const Dashboard: React.FC = () => {
                                         <DollarOutlined style={{ marginRight: "6px" }} />
                                         일일 수익: <strong style={{ marginLeft: "4px", marginRight: "2px", color: "#52c41a" }}>{Math.floor((2000 / 30) * (stats?.premium_user_count ?? 0)).toLocaleString()}</strong>원
                                     </Text>
+                                </div>
+                            </Card>
+                        </Col>
+                        <Col xs={24} sm={12} lg={12} xl={6}>
+                            <Card hoverable style={{ borderRadius: "12px", borderLeft: "5px solid #13c2c2", boxShadow: "0 2px 8px rgba(0,0,0,0.05)", height: "100%" }}>
+                                <Text strong style={{ fontSize: "14px", color: "rgba(0, 0, 0, 0.45)", display: "block", marginBottom: "16px" }}>
+                                    최근 30일 활성 사용자
+                                </Text>
+                                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                        <Text><GlobalOutlined style={{ marginRight: "8px", color: "#1890ff" }} /> Web</Text>
+                                        <Text strong>{stats?.web_active_users_30d?.toLocaleString() ?? 0}명</Text>
+                                    </div>
+                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                        <Text><AppleOutlined style={{ marginRight: "8px", color: "#000" }} /> iOS</Text>
+                                        <Text strong>{stats?.ios_active_users_30d?.toLocaleString() ?? 0}명</Text>
+                                    </div>
+                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                        <Text><AndroidOutlined style={{ marginRight: "8px", color: "#52c41a" }} /> Android</Text>
+                                        <Text strong>{stats?.android_active_users_30d?.toLocaleString() ?? 0}명</Text>
+                                    </div>
                                 </div>
                             </Card>
                         </Col>

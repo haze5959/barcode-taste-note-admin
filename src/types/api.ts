@@ -30,6 +30,9 @@ export interface DashboardStats {
     daily_note_count: number;
     not_reply_report_count: number;
     premium_user_count: number;
+    web_active_users_30d?: number;
+    ios_active_users_30d?: number;
+    android_active_users_30d?: number;
 }
 
 export interface ProductMainImageResponse {
