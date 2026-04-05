@@ -15,7 +15,7 @@ import {
     Card,
     Select,
 } from "antd";
-import { fetchProducts, getProductDetail, updateProduct, updateImage, getMainImage, uploadImage, mergeProduct, getProductBarcodes, updateImageUrl } from "../../api/admin";
+import { fetchProducts, getProductDetail, updateProduct, updateImage, getMainImage, uploadImage, mergeProduct, getProductBarcodes, updateImageUrl, deleteProduct } from "../../api/admin";
 import { ProductInfo, UpdateProductRequest } from "../../types/api";
 
 const PRODUCT_TYPES = ["whisky", "wine", "beer", "soju/sake", "liqueur/spirit", "cocktail", "coffee", "beverage", "other"];
@@ -52,6 +52,7 @@ export const ProductList: React.FC = () => {
     const [mergeConfirmVisible, setMergeConfirmVisible] = useState<boolean>(false);
     const [toProductDetail, setToProductDetail] = useState<ProductInfo | null>(null);
     const [merging, setMerging] = useState<boolean>(false);
+    const [isDeleting, setIsDeleting] = useState<boolean>(false);
 
     const loadProducts = async (search: string, page: number) => {
         setLoading(true);
@@ -248,6 +249,32 @@ export const ProductList: React.FC = () => {
         }
     };
 
+    const handleDeleteProduct = async () => {
+        if (!selectedProduct) return;
+
+        Modal.confirm({
+            title: "제품 삭제 확인",
+            content: `정말로 "${selectedProduct.product.name}" 제품을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.`,
+            okText: "삭제",
+            okType: "danger",
+            cancelText: "취소",
+            onOk: async () => {
+                setIsDeleting(true);
+                try {
+                    await deleteProduct(selectedProduct.product.id);
+                    message.success("제품이 성공적으로 삭제되었습니다.");
+                    setIsModalVisible(false);
+                    setSelectedProduct(null);
+                    loadProducts(searchText, currentPage);
+                } catch (error) {
+                    console.error("Failed to delete product:", error);
+                } finally {
+                    setIsDeleting(false);
+                }
+            },
+        });
+    };
+
     const columns = [
         {
             title: "이름",
@@ -334,6 +361,15 @@ export const ProductList: React.FC = () => {
                     setImageUrlInput("");
                 }}
                 footer={[
+                    <Button
+                        key="delete"
+                        danger
+                        loading={isDeleting}
+                        onClick={handleDeleteProduct}
+                        style={{ float: "left" }}
+                    >
+                        삭제
+                    </Button>,
                     <Button key="back" onClick={() => setIsModalVisible(false)}>
                         닫기
                     </Button>,

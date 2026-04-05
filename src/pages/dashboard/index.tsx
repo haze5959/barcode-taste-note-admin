@@ -14,6 +14,7 @@ import {
     GlobalOutlined,
     AppleOutlined,
     AndroidOutlined,
+    ReloadOutlined,
 } from "@ant-design/icons";
 import { getDashboard } from "../../api/admin";
 import { DashboardStats } from "../../types/api";
@@ -24,27 +25,33 @@ export const Dashboard: React.FC = () => {
     const [loading, setLoading] = useState<boolean>(true);
     const [stats, setStats] = useState<DashboardStats | null>(null);
 
+    const fetchDashboard = async () => {
+        try {
+            setLoading(true);
+            const data = await getDashboard();
+            setStats(data);
+        } catch (error) {
+            console.error("Dashboard fetch error:", error);
+            message.error("대시보드 데이터를 가져오는데 실패했습니다.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
-        const fetchDashboard = async () => {
-            try {
-                setLoading(true);
-                const data = await getDashboard();
-                setStats(data);
-            } catch (error) {
-                console.error("Dashboard fetch error:", error);
-                message.error("대시보드 데이터를 가져오는데 실패했습니다.");
-            } finally {
-                setLoading(false);
-            }
-        };
         fetchDashboard();
     }, []);
 
     return (
         <div style={{ padding: "24px", maxWidth: "1600px", margin: "0 auto" }}>
-            <Title level={2} style={{ marginBottom: "24px", fontWeight: "bold" }}>
-                📊 대시보드
-            </Title>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
+                <Title level={2} style={{ marginBottom: 0, fontWeight: "bold" }}>
+                    📊 대시보드
+                </Title>
+                <Button type="primary" icon={<ReloadOutlined />} onClick={fetchDashboard} loading={loading}>
+                    새로고침
+                </Button>
+            </div>
 
             {loading ? (
                 <div style={{ textAlign: "center", padding: "100px 0" }}>

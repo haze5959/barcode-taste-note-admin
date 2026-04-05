@@ -229,3 +229,10 @@ export function fetchNotes(index: number, per: number = 20): Promise<NoteInfo[]>
 
     return apiFetch<NoteInfo[]>(`/admin/notes?${params.toString()}`);
 }
+
+// DELETE admin/products/:product_id
+export function deleteProduct(productId: string): Promise<null> {
+    return apiFetch<null>(`/admin/products/${productId}`, {
+        method: "DELETE",
+    });
+}
